@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "build": {
+      "command": ""
+    }
+  },
+  "edgeFunctions": {
+    "api": {
+      "path": "/api",
+      "functionPath": "functions/api.js"
+    }
+  }
+}

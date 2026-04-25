@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员管理 | AIbox 会员</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 22px; color: #1a1a2e; margin-bottom: 20px; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        th { font-weight: 600; color: #555; }
+        .toggle-btn { padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .approve { background: #d1fae5; color: #059669; }
+        .ban { background: #fee2e2; color: #dc2626; }
+        .refresh-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 500; }
+        .loading { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>👥 会员管理后台 <button class="refresh-btn" onclick="loadUsers()" style="margin-left:16px;">🔄 刷新</button></h1>
+    <div class="card">
+        <table>
+            <thead><tr><th>邮箱</th><th>注册时间</th><th>模型数</th><th>任务数</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="userTable"><tr><td colspan="6" class="loading">加载中...</td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const BIN_ID = '69eca334856a6821896f54f2';
+const MASTER_KEY = '$2a$10$gzJEAznDz7lWn9UdzFz/4.tkmh0hIlOl.mj7b8ivKMEKgDKzmO7O6';
+const BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+
+async function loadUsers() {
+    const tbody = document.getElementById('userTable');
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">⏳ 加载中...</td></tr>';
+    try {
+        let res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
+        let data = await res.json();
+        let users = data.record.users || {};
+        let rows = '';
+        for (let [key, user] of Object.entries(users)) {
+            let isApproved = user.approved !== false;
+            rows += `<tr>
+                <td>${esc(user.email || '-')}</td>
+                <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</td>
+                <td>${(user.models || []).length}</td>
+                <td>${(user.tasks || []).length}</td>
+                <td><span style="color:${isApproved ? '#059669' : '#dc2626'}">${isApproved ? '✅ 正常' : '🚫 已禁用'}</span></td>
+                <td>
+                    ${isApproved
+                        ? `<button class="toggle-btn ban" onclick="toggleUser('${key}', false, this)">禁用</button>`
+                        : `<button class="toggle-btn approve" onclick="toggleUser('${key}', true, this)">启用</button>`
+                    }
+                </td>
+            </tr>`;
+        }
+        tbody.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:#999;padding:40px;">暂无注册用户</td></tr>';
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:40px;">加载失败：' + e.message + '</td></tr>'; }
+}
+
+async function toggleUser(userKey, approve, btn) {
+    btn.disabled = true; btn.textContent = '处理中...';
+    try {
+        let res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
+        let data = await res.json();
+        let users = data.record.users || {};
+        if (users[userKey]) {
+            users[userKey].approved = approve;
+            await fetch(BIN_URL, { method: 'PUT', headers: { 'X-Master-Key': MASTER_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ users }) });
+            loadUsers();
+        }
+    } catch(e) { alert('操作失败：' + e.message); btn.disabled = false; btn.textContent = approve ? '启用' : '禁用'; }
+}
+
+function esc(s) { return (s || '').replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'>'); }
+
+loadUsers();
+</script>
+</body>
+</html>

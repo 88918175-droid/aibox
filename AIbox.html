@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AIBOX视频生成 | 图生视频工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .top-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        h1 {
+            font-size: 24px;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .global-config {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .global-config-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        .global-config-item label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .global-config-item input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .two-columns {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .models-panel {
+            flex: 1.2;
+            min-width: 320px;
+        }
+        .workspace-panel {
+            flex: 2;
+            min-width: 400px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        .model-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .model-item {
+            background: #f8f9fa;
+            border-radius: 14px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .model-item:hover { background: #f0f3ff; }
+        .model-item.active {
+            background: linear-gradient(135deg, #f5f0ff, #faf5ff);
+            border-color: #667eea;
+        }
+        .model-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .model-type {
+            font-size: 11px;
+            color: #888;
+            background: #eee;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .model-desc { font-size: 12px; color: #888; margin-top: 6px; word-break: break-all; }
+        .model-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 6px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .multi-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+            margin-bottom: 12px;
+        }
+        .multi-upload-area:hover, .multi-upload-area.drag-over {
+            border-color: #667eea;
+            background: #f5f3ff;
+        }
+        .image-preview-list { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+        .preview-item {
+            position: relative;
+            width: 80px; height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-item .remove-btn {
+            position: absolute;
+            top: -8px; right: -8px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            font-size: 12px;
+            text-align: center;
+            line-height: 18px;
+            cursor: pointer;
+        }
+        .result-area { background: #f8f9fa; border-radius: 16px; padding: 16px; margin-top: 20px; }
+        .result-image img, .result-video video { max-width: 100%; border-radius: 12px; }
+        .download-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2px solid #ddd;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .status-processing { background: #fef3c7; color: #d97706; }
+        .status-success { background: #d1fae5; color: #059669; }
+        .status-error { background: #fee2e2; color: #dc2626; }
+        .generate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 28px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-header { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+        .close-modal { float: right; font-size: 24px; cursor: pointer; color: #999; }
+        .help-text { font-size: 12px; color: #888; margin-top: 4px; }
+        .api-key-config { background: #fef3c7; padding: 12px; border-radius: 12px; margin-bottom: 16px; }
+        footer { text-align: center; margin-top: 20px; color: #aaa; font-size: 12px; }
+        .task-center {
+            position: fixed;
+            top: 0; right: -500px;
+            width: 500px; height: 100vh;
+            background: white;
+            box-shadow: -2px 0 12px rgba(0,0,0,0.15);
+            z-index: 1100;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .task-center.open { right: 0; }
+        .task-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+        .task-filters input, .task-filters select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .task-list { flex: 1; overflow-y: auto; padding: 12px; }
+        .task-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #ddd;
+        }
+        .task-item.success { border-left-color: #10b981; }
+        .task-item.error { border-left-color: #dc2626; }
+        .task-item.processing { border-left-color: #f59e0b; }
+        .task-title { font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .task-prompt { font-size: 12px; color: #555; margin-bottom: 8px; word-break: break-all; }
+        .task-meta { font-size: 11px; color: #888; display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+        .task-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .task-actions button { padding: 4px 10px; font-size: 11px; }
+        .task-result-preview { margin-top: 8px; }
+        .task-result-preview img, .task-result-preview video {
+            max-width: 100%;
+            max-height: 100px;
+            border-radius: 8px;
+        }
+        
+        /* 密码框样式复用给登录提示用 */
+        .password-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .password-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .password-box input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .password-box button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .password-error { color: #dc2626; font-size: 13px; margin-top: 8px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <h1>🎬 AIBOX视频生成工具</h1>
+        <div class="global-config">
+            <div class="global-config-item">
+                <label>🔑 默认 API Key</label>
+                <input type="password" id="globalApiKey" placeholder="Bearer sk-xxx">
+            </div>
+            <div class="global-config-item">
+                <label>🌐 默认 Base URL</label>
+                <input type="text" id="globalBaseUrl" placeholder="https://aigc.x-see.cn">
+            </div>
+            <div class="global-config-item">
+                <label>&nbsp;</label>
+                <button class="btn-primary" onclick="saveGlobalConfig()">💾 保存全局配置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="two-columns">
+        <div class="models-panel">
+            <div class="card">
+                <div class="card-title">
+                    <span>📋 我的模型</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-secondary" onclick="exportModels()">📤 导出</button>
+                        <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📥 导入</button>
+                        <button class="btn-secondary" onclick="openModelModal()">+ 添加</button>
+                        <button class="btn-secondary" onclick="toggleTaskCenter()">📋 任务中心</button>
+                    </div>
+                </div>
+                <input type="text" id="searchModelInput" class="search-box" placeholder="🔍 搜索模型...">
+                <div id="modelList" class="model-list"></div>
+                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importModels(this)">
+                <div style="margin-top:12px;font-size:12px;color:#888;">💡 数据已自动云同步，换电脑登录即恢复</div>
+            </div>
+            <div class="card">
+                <div class="card-title">📦 快速添加模板</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button class="btn-secondary" onclick="addTemplate('sora2-video')">🎬 Sora2 视频</button>
+                    <button class="btn-secondary" onclick="addTemplate('gpt-image-2')">🎨 图片生成</button>
+                    <button class="btn-secondary" onclick="addTemplate('chat')">💬 通用对话</button>
+                    <button class="btn-secondary" onclick="addTemplate('custom')">⚙️ 自定义</button>
+                </div>
+            </div>
+        </div>
+        <div class="workspace-panel">
+            <div class="card">
+                <div class="card-title" id="workspaceTitle">⚡ 选择左侧模型开始使用</div>
+                <div id="workspaceContent">
+                    <div style="text-align:center;padding:60px 20px;color:#aaa;">👈 添加一个模型，然后点击选择</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>🔒 数据云同步 | 登录即恢复所有历史记录</footer>
+</div>
+
+<div id="taskCenter" class="task-center">
+    <div class="task-header">
+        <h3>📋 任务中心</h3>
+        <button class="btn-secondary" onclick="toggleTaskCenter()">✕ 关闭</button>
+    </div>
+    <div class="task-filters">
+        <select id="taskTypeFilter" onchange="renderTaskList()">
+            <option value="all">全部类型</option>
+            <option value="video">视频</option>
+            <option value="image">图片</option>
+            <option value="chat">对话</option>
+        </select>
+        <select id="taskStatusFilter" onchange="renderTaskList()">
+            <option value="all">全部状态</option>
+            <option value="success">成功</option>
+            <option value="processing">进行中</option>
+            <option value="error">失败</option>
+        </select>
+        <input type="text" id="taskSearch" placeholder="搜索提示词/模型名/ID" style="flex:1" oninput="renderTaskList()">
+        <button class="btn-secondary" onclick="exportTasks()">📤 导出任务</button>
+        <button class="btn-secondary" onclick="document.getElementById('importTasksFile').click()">📥 导入任务</button>
+        <button class="btn-danger" onclick="clearCompletedTasks()">🗑️ 清空已完成</button>
+        <input type="file" id="importTasksFile" style="display:none" accept=".json" onchange="importTasks(this)">
+    </div>
+    <div id="taskListContainer" class="task-list"></div>
+</div>
+
+<div id="modelModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModelModal()">&times;</span>
+        <div class="modal-header" id="modalTitle">添加模型</div>
+        <input type="hidden" id="editModelId">
+        <div class="form-group"><label>模型名称 *</label><input type="text" id="modelName" placeholder="例如：Sora2视频生成"></div>
+        <div class="api-key-config">
+            <div class="form-group"><label>🔑 独立 API Key</label><input type="password" id="modelApiKey" placeholder="留空使用全局"></div>
+            <div class="form-group"><label>🌐 独立 Base URL</label><input type="text" id="modelBaseUrl" placeholder="留空使用全局"></div>
+        </div>
+        <div class="form-group"><label>API 路径 *</label><input type="text" id="modelPath" placeholder="/v1/videos"></div>
+        <div class="form-group"><label>请求方式</label><select id="modelMethod"><option value="POST">POST</option></select></div>
+        <div class="form-group"><label>模型ID</label><input type="text" id="modelId" placeholder="sora-2-reverse"></div>
+        <div class="form-group"><label>请求体模板 (JSON)</label><textarea id="modelBodyTemplate" rows="5"></textarea></div>
+        <div class="form-group"><label>响应解析路径</label><input type="text" id="modelResultPath" placeholder="id"></div>
+        <div class="form-group"><label>模型类型</label><select id="modelType"><option value="video">视频生成</option><option value="image">图片生成</option><option value="chat">对话/其他</option></select></div>
+        <div class="form-group" id="pollConfig"><label>异步轮询配置</label><div class="form-row"><input type="text" id="modelPollPath" placeholder="/v1/videos/{task_id}"><input type="text" id="modelTaskIdPath" placeholder="task_id"></div></div>
+        <div class="form-group"><label>描述</label><input type="text" id="modelDesc" placeholder="简短描述"></div>
+        <div style="display:flex;gap:12px;"><button class="btn-primary" onclick="saveModel()">保存</button><button class="btn-secondary" onclick="closeModelModal()">取消</button></div>
+    </div>
+</div>
+
+<script>
+// ========== JSONBin 配置 ==========
+const BIN_ID = '69eca334856a6821896f54f2';
+const MASTER_KEY = '$2a$10$gzJEAznDz7lWn9UdzFz/4.tkmh0hIlOl.mj7b8ivKMEKgDKzmO7O6';
+const BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+
+// ========== 用户认证检查（未登录则跳回首页） ==========
+let currentUser = null;
+(function() {
+    const u = localStorage.getItem('aibox_user');
+    if (!u) { location.href = 'index.html'; return; }
+    try { currentUser = JSON.parse(u); } catch(e) { location.href = 'index.html'; }
+})();
+
+// ========== 全局变量 ==========
+let models = [], currentModelId = null, pollingTimer = null, isPolling = false;
+let globalApiKey = '', globalBaseUrl = '';
+let tasks = [];
+let nextTaskId = 1;
+
+// ========== 云端存储函数 ==========
+async function syncToCloud() {
+    if (!currentUser) return;
+    try {
+        let res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
+        let data = await res.json();
+        let users = data.record.users || {};
+        users[currentUser.key] = {
+            ...users[currentUser.key],
+            models: models,
+            tasks: tasks
+        };
+        await fetch(BIN_URL, {
+            method: 'PUT',
+            headers: { 'X-Master-Key': MASTER_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ users })
+        });
+    } catch(e) { console.error('云同步失败', e); }
+}
+
+// ========== 任务存储 ==========
+function loadTasks() {
+    try {
+        const saved = localStorage.getItem('ai_tasks');
+        tasks = saved ? JSON.parse(saved) : [];
+        if (tasks.length) nextTaskId = Math.max(...tasks.map(t => t.id), 0) + 1;
+    } catch(e) { tasks = []; }
+    renderTaskList();
+}
+function saveTasks() {
+    try { localStorage.setItem('ai_tasks', JSON.stringify(tasks)); syncToCloud(); } catch(e) { alert('存储空间不足'); }
+}
+function addTask(task) {
+    task.id = nextTaskId++;
+    tasks.unshift(task);
+    saveTasks();
+    renderTaskList();
+    return task.id;
+}
+function updateTaskStatus(taskId, status, resultUrl, errorMsg) {
+    const task = tasks.find(t => t.id == taskId);
+    if (task) {
+        task.status = status;
+        if (resultUrl) task.resultUrl = resultUrl;
+        if (errorMsg) task.errorMsg = errorMsg;
+        saveTasks();
+        renderTaskList();
+    }
+}
+
+// ========== 导出/导入任务 ==========
+function exportTasks() {
+    const dataStr = JSON.stringify(tasks, null, 2);
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tasks_backup_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+function importTasks(input) {
+    const file = input.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            if(Array.isArray(imported)) {
+                tasks = imported.concat(tasks);
+                nextTaskId = Math.max(...tasks.map(t => t.id), 0) + 1;
+                saveTasks();
+                renderTaskList();
+                alert('成功导入 ' + imported.length + ' 条任务');
+            } else alert('文件格式错误');
+        } catch(err) { alert('解析失败'); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// ========== 筛选任务 ==========
+function renderTaskList() {
+    const container = document.getElementById('taskListContainer');
+    if (!container) return;
+    const typeFilter = document.getElementById('taskTypeFilter')?.value || 'all';
+    const statusFilter = document.getElementById('taskStatusFilter')?.value || 'all';
+    const searchText = (document.getElementById('taskSearch')?.value || '').toLowerCase();
+    let filtered = tasks.filter(t => {
+        if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+        if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+        if (searchText) {
+            const matchPrompt = (t.prompt || '').toLowerCase().includes(searchText);
+            const matchModel = (t.modelName || '').toLowerCase().includes(searchText);
+            const matchId = (t.id + '').includes(searchText);
+            if (!matchPrompt && !matchModel && !matchId) return false;
+        }
+        return true;
+    });
+    container.innerHTML = '';
+    if (!filtered.length) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">暂无任务</div>';
+        return;
+    }
+    filtered.forEach(task => {
+        const div = document.createElement('div');
+        div.className = 'task-item ' + (task.status || '');
+        const isVideo = task.type === 'video';
+        const typeIcon = isVideo ? '🎬' : (task.type === 'image' ? '🖼️' : '💬');
+        const statusText = task.status === 'success' ? '成功' : (task.status === 'processing' ? '进行中' : '失败');
+        const statusClass = task.status === 'success' ? 'status-success' : (task.status === 'processing' ? 'status-processing' : 'status-error');
+        const promptPreview = (task.prompt || '').length > 80 ? (task.prompt || '').slice(0,80) + '...' : (task.prompt || '');
+        div.innerHTML = `
+            <div class="task-title">
+                <span>${typeIcon} ${escapeHtml(task.modelName || '')}</span>
+                <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="task-prompt">${escapeHtml(promptPreview)}</div>
+            <div class="task-meta">
+                <span>🕒 ${new Date(task.createdAt).toLocaleString()}</span>
+                ${isVideo && task.duration ? '<span>⏱️ ' + task.duration + 's</span>' : ''}
+            </div>
+                                    <div class="task-actions">
+                ${task.status === 'success' && task.resultUrl ? '<button class="btn-secondary" onclick="window.open(\'' + task.resultUrl + '\',\'_blank\')">📥 打开</button>' : ''}
+                <button class="btn-secondary" onclick="copyPromptSafe(' + task.id + ')">📋 复制提示词</button>
+                <button class="btn-secondary" onclick="editTaskSafe(' + task.id + ')">✏️ 重新编辑</button>
+                <button class="btn-danger" onclick="deleteTaskSafe(' + task.id + ')">🗑️ 删除</button>
+            </div>
+            ${task.status === 'success' && task.resultUrl ? `
+            <div class="task-result-preview">
+                ${isVideo ? '<video src="' + task.resultUrl + '" controls style="max-height:100px;cursor:pointer" onclick="window.open(\'' + task.resultUrl + '\')"></video>' : '<img src="' + task.resultUrl + '" onclick="window.open(\'' + task.resultUrl + '\')" style="cursor:pointer">'}
+            </div>` : ''}
+            ${task.status === 'error' ? '<div class="task-meta" style="color:#dc2626">❌ ' + (task.errorMsg || '未知错误') + '</div>' : ''}
+        `;
+        container.appendChild(div);
+    });
+}
+
+function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ========== 下载修复 ==========
+function downloadTaskResult(taskId) {
+    const task = tasks.find(t => t.id == taskId);
+    if (!task || !task.resultUrl) return;
+    const url = task.resultUrl;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (task.type || 'file') + '_' + task.id + '.' + (task.type === 'image' ? 'png' : 'mp4');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } else {
+        alert('下载链接无效：' + url);
+    }
+}
+
+function copyPrompt(taskId) {
+    const task = tasks.find(t => t.id == taskId);
+    if (task && task.prompt) {
+        navigator.clipboard.writeText(task.prompt);
+        alert('提示词已复制到剪贴板');
+    }
+}
+function editTask(taskId) {
+    const task = tasks.find(t => t.id == taskId);
+    if (!task) return;
+    const model = models.find(m => m.id === task.modelId);
+    if (!model) { alert('该任务对应的模型已被删除'); return; }
+    selectModel(model.id);
+    setTimeout(function() {
+        const promptInput = document.getElementById('promptInput');
+        if (promptInput) promptInput.value = task.prompt || '';
+        const ratioSelect = document.getElementById('ratioSelect');
+        if (ratioSelect && task.aspectRatio) ratioSelect.value = task.aspectRatio;
+        const durationInput = document.getElementById('durationInput');
+        if (durationInput && task.duration) durationInput.value = task.duration;
+        const sizeSelect = document.getElementById('sizeSelect');
+        if (sizeSelect && task.size) sizeSelect.value = task.size;
+        alert('已加载任务到工作区，点击生成按钮重新生成');
+    }, 200);
+    toggleTaskCenter(false);
+}
+function deleteTask(taskId) {
+    tasks = tasks.filter(t => t.id != taskId);
+    saveTasks();
+    renderTaskList();
+}
+function clearCompletedTasks() {
+    const count = tasks.filter(t => t.status !== 'processing').length;
+    if (count === 0) { alert('没有可清空的任务'); return; }
+    if (confirm('确定要删除所有已完成/失败的任务吗？共 ' + count + ' 条。\n建议先导出备份。')) {
+        tasks = tasks.filter(t => t.status === 'processing');
+        saveTasks();
+        renderTaskList();
+    }
+}
+function toggleTaskCenter(open) {
+    const panel = document.getElementById('taskCenter');
+    if (open === undefined) panel.classList.toggle('open');
+    else if (open) panel.classList.add('open');
+    else panel.classList.remove('open');
+}
+
+// ========== 模型存储 ==========
+const defaultModels = [
+    { id: 'sora2_001', name: 'Sora2 视频生成', path: '/v1/videos', method: 'POST', modelId: 'sora-2-reverse', bodyTemplate: '{"model":"{model}","prompt":"{prompt}","aspect_ratio":"{aspect_ratio}","seconds":"{duration}","input_reference":"{images}","quality":"high"}', resultPath: 'task_id', type: 'video', pollPath: '/v1/videos/{task_id}', taskIdPath: 'task_id', desc: '高清+参考图', apiKey: '', baseUrl: '' },
+   { id: 'img_001', name: '图片生成', path: '/v1/chat/completions', method: 'POST', modelId: 'gpt-image-2-reverse', bodyTemplate: '{"model":"{model}","messages":[{"role":"user","content":"{prompt}"}],"n":1}', resultPath: 'choices[0].message.content', type: 'image', pollPath: '', taskIdPath: '', desc: '图生图', apiKey: '', baseUrl: '' }
+];
+
+async function loadData() {
+    // 先从云端拉数据
+    if (currentUser) {
+        try {
+            const res = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
+            const data = await res.json();
+            const users = data.record.users || {};
+            if (users[currentUser.key]) {
+                models = users[currentUser.key].models || defaultModels;
+                tasks = users[currentUser.key].tasks || [];
+                if (tasks.length) nextTaskId = Math.max(...tasks.map(t => t.id), 0) + 1;
+            } else {
+                models = defaultModels;
+                tasks = [];
+            }
+        } catch(e) {
+            models = defaultModels;
+            tasks = [];
+        }
+    } else {
+        const saved = localStorage.getItem('ai_models');
+        models = saved ? JSON.parse(saved) : defaultModels;
+    }
+    globalApiKey = localStorage.getItem('global_api_key') || '';
+    globalBaseUrl = localStorage.getItem('global_base_url') || 'https://aigc.x-see.cn';
+    document.getElementById('globalApiKey').value = globalApiKey;
+    document.getElementById('globalBaseUrl').value = globalBaseUrl;
+    renderModelList();
+    loadTasks();
+}
+function saveGlobalConfig() {
+    globalApiKey = document.getElementById('globalApiKey').value;
+    globalBaseUrl = document.getElementById('globalBaseUrl').value;
+    localStorage.setItem('global_api_key', globalApiKey);
+    localStorage.setItem('global_base_url', globalBaseUrl);
+    alert('全局配置已保存');
+}
+function saveModels() { localStorage.setItem('ai_models', JSON.stringify(models)); syncToCloud(); }
+
+function renderModelList() {
+    const searchTerm = (document.getElementById('searchModelInput')?.value || '').toLowerCase();
+    const filtered = models.filter(function(m) {
+        return m.name.toLowerCase().includes(searchTerm) || (m.desc || '').toLowerCase().includes(searchTerm);
+    });
+    const container = document.getElementById('modelList');
+    container.innerHTML = '';
+    if (!filtered.length) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">未找到模型</div>';
+        return;
+    }
+    filtered.forEach(function(model) {
+        const div = document.createElement('div');
+        div.className = 'model-item' + (currentModelId === model.id ? ' active' : '');
+        div.onclick = function() { selectModel(model.id); };
+        div.innerHTML = '<div class="model-name"><span>' + escapeHtml(model.name) + '</span><span class="model-type">' + (model.type === 'image' ? '🎨图片' : (model.type === 'video' ? '🎬视频' : '💬对话')) + '</span></div>' +
+            '<div class="model-desc">' + escapeHtml(model.desc || model.path) + '</div>' +
+            '<div class="model-actions" onclick="event.stopPropagation()">' +
+            '<button class="btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="editModel(\'' + model.id + '\')">编辑</button> ' +
+            '<button class="btn-danger" style="padding:4px 10px;font-size:11px;" onclick="deleteModel(\'' + model.id + '\')">删除</button></div>';
+        container.appendChild(div);
+    });
+}
+document.getElementById('searchModelInput')?.addEventListener('input', renderModelList);
+
+function selectModel(id) {
+    currentModelId = id;
+    renderModelList();
+    const model = models.find(function(m) { return m.id === id; });
+    if (model) renderWorkspace(model);
+}
+
+// ========== 图片上传 ==========
+function createMultiUploadArea(onChange, existingImages) {
+    existingImages = existingImages || [];
+    const container = document.createElement('div');
+    container.className = 'multi-upload-area';
+    container.innerHTML = '<div class="upload-icon">📸</div><div class="upload-text">点击或拖拽上传多张图片（支持 JPG/PNG）</div><input type="file" multiple accept="image/*" style="display:none"><div class="image-preview-list"></div>';
+    const fileInput = container.querySelector('input');
+    const previewDiv = container.querySelector('.image-preview-list');
+    let images = existingImages.slice();
+    function updatePreviews() {
+        previewDiv.innerHTML = '';
+        images.forEach(function(imgBase64, idx) {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+            item.innerHTML = '<img src="' + imgBase64 + '"><div class="remove-btn" data-idx="' + idx + '">×</div>';
+            item.querySelector('.remove-btn').onclick = function(e) {
+                e.stopPropagation();
+                images.splice(idx, 1);
+                updatePreviews();
+                onChange(images);
+            };
+            previewDiv.appendChild(item);
+        });
+        onChange(images);
+    }
+    container.onclick = function() { fileInput.click(); };
+    fileInput.onchange = function(e) {
+        Array.from(e.target.files).forEach(function(file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(ev) { images.push(ev.target.result); updatePreviews(); };
+                reader.readAsDataURL(file);
+            }
+        });
+        fileInput.value = '';
+    };
+    container.ondragover = function(e) { e.preventDefault(); container.classList.add('drag-over'); };
+    container.ondragleave = function() { container.classList.remove('drag-over'); };
+    container.ondrop = function(e) {
+        e.preventDefault();
+        container.classList.remove('drag-over');
+        Array.from(e.dataTransfer.files).forEach(function(file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(ev) { images.push(ev.target.result); updatePreviews(); };
+                reader.readAsDataURL(file);
+            }
+        });
+    };
+    updatePreviews();
+    return { container: container, getImages: function() { return images; }, setImages: function(newImgs) { images = newImgs; updatePreviews(); } };
+}
+
+// ========== 工作区渲染 ==========
+function renderWorkspace(model) {
+    document.getElementById('workspaceTitle').innerHTML = '⚡ ' + escapeHtml(model.name);
+    const content = document.getElementById('workspaceContent');
+    const modelApiKey = model.apiKey || '';
+    const modelBaseUrl = model.baseUrl || '';
+    const commonApiHtml = '<div class="api-key-config"><div class="form-row">' +
+        '<div class="form-group"><label>🔑 本模型API Key</label><input type="password" id="workspaceApiKey" placeholder="留空使用全局" value="' + modelApiKey.replace(/"/g, '&quot;') + '"></div>' +
+        '<div class="form-group"><label>🌐 本模型Base URL</label><input type="text" id="workspaceBaseUrl" placeholder="留空使用全局" value="' + modelBaseUrl + '"></div></div>' +
+        '<button class="btn-secondary" style="margin-top:5px;padding:4px 10px;font-size:12px;" onclick="saveModelApiConfig(\'' + model.id + '\')">保存此模型配置</button></div>';
+
+    if (model.type === 'image') {
+        content.innerHTML = '<div class="form-group"><label>📝 提示词</label><textarea id="promptInput" rows="3" placeholder="描述图片..."></textarea></div>' +
+            '<div class="form-group"><label>🖼️ 参考图（可选）</label><div id="multiUploadImage"></div></div>' +
+            '<div class="form-row"><div class="form-group"><label>📐 尺寸</label><select id="sizeSelect">' +
+            '<option value="1024x1024">1:1</option><option value="1792x1024">16:9</option><option value="1024x1792">9:16</option></select></div>' +
+            '<div class="form-group"><label>🔢 数量</label><select id="countSelect"><option value="1">1</option><option value="2">2</option></select></div></div>' +
+            commonApiHtml + '<button class="generate-btn" onclick="generateWithModel(\'' + model.id + '\')">✨ 生成图片</button><div id="workspaceResult" class="result-area" style="display:none;"></div>';
+        setTimeout(function() {
+            const multiArea = createMultiUploadArea(function(imgs) { window._curImageRefs = imgs; });
+            document.getElementById('multiUploadImage').appendChild(multiArea.container);
+            window._curImageRefs = [];
+        }, 50);
+
+
+    } else if (model.type === 'video') {
+        content.innerHTML = '<div class="form-group"><label>📝 提示词</label><textarea id="promptInput" rows="3" placeholder="描述视频..."></textarea></div>' +
+            '<div class="form-group"><label>🖼️ 参考图</label><div id="multiUploadVideo"></div></div>' +
+            '<div class="form-row"><div class="form-group"><label>🎬 画面比例</label><select id="ratioSelect"><option value="16:9">16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></div>' +
+            '<div class="form-group"><label>⏱️ 视频时长(秒)</label><input type="number" id="durationInput" min="6" max="30" value="10" step="1"></div></div>' +
+            '<div class="form-group"><label>📐 分辨率</label><select id="videoSizeSelect"><option value="1280x720">1280x720</option><option value="720x1280">720x1280</option></select></div>' +
+            commonApiHtml + '<button class="generate-btn" onclick="generateWithModel(\'' + model.id + '\')">🎥 生成视频</button><div id="workspaceResult" class="result-area" style="display:none;"></div>';
+        setTimeout(function() {
+            const multiArea = createMultiUploadArea(function(imgs) { window._curVideoImages = imgs; });
+            document.getElementById('multiUploadVideo').appendChild(multiArea.container);
+            window._curVideoImages = [];
+        }, 50);
+    } else {
+        content.innerHTML = '<div class="form-group"><label>💬 消息内容</label><textarea id="promptInput" rows="4" placeholder="输入你的问题..."></textarea></div>' +
+            '<div class="form-group"><label>🖼️ 参考图</label><div id="multiUploadChat"></div></div>' +
+            commonApiHtml + '<button class="generate-btn" onclick="generateWithModel(\'' + model.id + '\')">💬 发送消息</button><div id="workspaceResult" class="result-area" style="display:none;"></div>';
+        setTimeout(function() {
+            const multiArea = createMultiUploadArea(function(imgs) { window._curChatImages = imgs; });
+            document.getElementById('multiUploadChat').appendChild(multiArea.container);
+            window._curChatImages = [];
+        }, 50);
+    }
+}
+
+// ========== 生成请求 ==========
+async function generateWithModel(modelId) {
+    const model = models.find(function(m) { return m.id === modelId; });
+    if (!model) return;
+    const prompt = document.getElementById('promptInput')?.value;
+    if (!prompt) { alert('请输入内容'); return; }
+    const apiKey = document.getElementById('workspaceApiKey')?.value || model.apiKey || globalApiKey;
+    const baseUrl = document.getElementById('workspaceBaseUrl')?.value || model.baseUrl || globalBaseUrl;
+    if (!apiKey) { alert('请配置API Key'); return; }
+    if (!baseUrl) { alert('请配置Base URL'); return; }
+
+    let aspectRatio = '16:9', duration = 10, size = '1024x1024', n = 1;
+    let replacements = { model: model.modelId, prompt: prompt };
+    if (model.type === 'video') {
+        aspectRatio = document.getElementById('ratioSelect')?.value || '16:9';
+        duration = parseInt(document.getElementById('durationInput')?.value || 10);
+        size = document.getElementById('videoSizeSelect')?.value || '1280x720';
+        replacements.aspect_ratio = aspectRatio;
+        replacements.duration = duration;
+        replacements.size = size;
+    }
+    const localTaskId = addTask({
+        modelId: model.id, modelName: model.name, type: model.type,
+        prompt: prompt, size: size, n: n, aspectRatio: aspectRatio, duration: duration,
+        status: 'processing', createdAt: Date.now(), resultUrl: null, errorMsg: null
+    });
+
+   let body;
+    try {
+        let processed = model.bodyTemplate;
+        
+        // ===== 图片模型处理 =====
+        if (model.type === 'image') {
+            Object.entries(replacements).forEach(function(entry) {
+                const k = entry[0], v = entry[1];
+                if (k === 'images') return;
+                let val = typeof v === 'string' ? v.replace(/\n/g, '\\n').replace(/\r/g, '\\r') : JSON.stringify(v);
+                processed = processed.replace(new RegExp('\\{' + k + '\\}', 'g'), val);
+            });
+            const imageRefs = window._curImageRefs || [];
+            if (imageRefs.length > 0) {
+                const contentArr = [{"type":"text","text":prompt}];
+imageRefs.forEach(function(img) { contentArr.push({"type":"image_url","image_url":{"url":img}}); });
+processed = processed.replace('"{prompt}"', JSON.stringify(contentArr));
+            }
+            body = JSON.parse(processed);
+        }
+        // ===== 视频模型处理 =====
+        else {
+            const videoImages = window._curVideoImages || [];
+            Object.entries(replacements).forEach(function(entry) {
+                const k = entry[0], v = entry[1];
+                if (k === 'images') return;
+                let val = typeof v === 'string' ? v.replace(/\n/g, '\\n').replace(/\r/g, '\\r') : JSON.stringify(v);
+                processed = processed.replace(new RegExp('\\{' + k + '\\}', 'g'), val);
+            });
+                       if (videoImages.length > 0 && processed.indexOf('{images}') !== -1) {
+                processed = processed.replace('"{images}"', JSON.stringify(videoImages[0]));
+            } else if (processed.indexOf('{images}') !== -1) {
+                processed = processed.replace('"{images}"', '""');
+            }
+            body = JSON.parse(processed);
+        }
+    } catch(e) {
+        updateTaskStatus(localTaskId, 'error', null, 'JSON模板错误: ' + e.message);
+        alert('JSON模板错误: ' + e.message);
+        return;
+    }
+
+    const url = baseUrl + model.path;
+    const btn = document.querySelector('.generate-btn');
+    const resultDiv = document.getElementById('workspaceResult');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> 处理中...';
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="status-badge status-processing">⏳ 请求中...</div>';
+    try {
+        const response = await fetch(url, {
+            method: model.method,
+            headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message || JSON.stringify(data));
+        if (model.type === 'video' && model.pollPath) {
+            const platformTaskId = getValueByPath(data, model.taskIdPath || 'task_id');
+            if (!platformTaskId) throw new Error('未获取到任务ID');
+            updateTaskStatus(localTaskId, 'processing', null, null);
+            startPolling(model, platformTaskId, apiKey, baseUrl, localTaskId);
+            resultDiv.innerHTML = '<div class="status-badge status-processing">🎬 任务提交 (ID:' + platformTaskId + ')，轮询中...</div>';
+        } else {
+            let resultData = getValueByPath(data, model.resultPath);
+            if (!resultData && model.type === 'video') {
+                resultData = data.video_url || (data.data && data.data.video_url) || data.url;
+            }
+           if (resultData) {
+                if(typeof resultData === 'string') {
+                    if (resultData.startsWith('iVBOR')) {
+                        resultData = 'data:image/png;base64,' + resultData;
+                    } else if (resultData.startsWith('![image]')) {
+                        const match = resultData.match(/\(data:image\/[^)]+\)/);
+                        if (match) resultData = match[0].slice(1, -1);
+                    }
+                }
+                displayResult(model.type, resultData);
+                updateTaskStatus(localTaskId, 'success', resultData, null);
+            } else {
+                resultDiv.innerHTML = '<pre style="background:#1e1e2e;color:#fff;padding:12px;border-radius:8px;">' + JSON.stringify(data, null, 2) + '</pre>';
+                updateTaskStatus(localTaskId, 'error', null, '未提取到结果');
+            }
+        }
+    } catch(err) {
+        resultDiv.innerHTML = '<div class="status-badge status-error">❌ 失败: ' + err.message + '</div>';
+        updateTaskStatus(localTaskId, 'error', null, err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = model.type === 'image' ? '✨ 生成图片' : (model.type === 'video' ? '🎥 生成视频' : '💬 发送消息');
+    }
+}
+
+// ========== 轮询 ==========
+function startPolling(model, platformTaskId, apiKey, baseUrl, localTaskId) {
+    if (pollingTimer) clearInterval(pollingTimer);
+    isPolling = true;
+    const pollPath = (model.pollPath || '').replace('{task_id}', platformTaskId);
+    const resultDiv = document.getElementById('workspaceResult');
+    let attempts = 0, max = 120;
+    const poll = async function() {
+        if (!isPolling) return;
+        attempts++;
+        try {
+            const res = await fetch(baseUrl + pollPath, { headers: { 'Authorization': 'Bearer ' + apiKey } });
+            const data = await res.json();
+            const status = data.status || data.state;
+            if (status === 'succeeded' || status === 'done' || status === 'completed' || status === 'succeed' || status === 'finished' || status === 'ready') {
+                let videoUrl = data.video_url || (data.data && data.data.video_url) || data.url || data.video?.url;
+                if (videoUrl) {
+                    clearInterval(pollingTimer);
+                    isPolling = false;
+                    displayResult('video', videoUrl);
+                    const task = tasks.find(t => t.id == localTaskId);
+                    if (task) autoSaveTaskLog(task);
+                    updateTaskStatus(localTaskId, 'success', videoUrl, null);
+                    return;
+                }
+            } else if (status === 'failed') throw new Error(data.error?.message || '生成失败');
+            resultDiv.innerHTML = '<div class="status-badge status-processing">⏳ 生成中... (' + attempts + '/' + max + ')</div>';
+            if (attempts >= max) {
+                clearInterval(pollingTimer);
+                isPolling = false;
+                resultDiv.innerHTML = '<div class="status-badge status-error">⏰ 超时</div>';
+                updateTaskStatus(localTaskId, 'error', null, '轮询超时');
+            }
+        } catch(e) {
+            if (attempts >= max) {
+                clearInterval(pollingTimer);
+                isPolling = false;
+                resultDiv.innerHTML = '<div class="status-badge status-error">❌ ' + e.message + '</div>';
+                updateTaskStatus(localTaskId, 'error', null, e.message);
+            }
+        }
+    };
+    poll();
+    pollingTimer = setInterval(poll, 5000);
+}
+
+function displayResult(type, data) {
+    const resultDiv = document.getElementById('workspaceResult');
+    const timestamp = Date.now();
+    if (type === 'image') {
+        resultDiv.innerHTML = '<div class="result-image"><img src="' + data + '" style="max-width:100%;border-radius:12px;"><div class="download-buttons"><button class="download-btn" onclick="downloadFile(\'' + data + '\',\'image_' + timestamp + '.png\')">📥 下载图片</button></div></div>';
+    } else if (type === 'video') {
+        resultDiv.innerHTML = '<div class="result-video"><video controls autoplay loop muted style="max-width:100%;border-radius:12px;"><source src="' + data + '" type="video/mp4"></video><div class="download-buttons"><button class="download-btn" onclick="downloadFile(\'' + data + '\',\'video_' + timestamp + '.mp4\')">📥 下载视频</button></div></div>';
+    } else {
+resultDiv.innerHTML = '<pre style="background:#1e1e2e;color:#fff;padding:12px;border-radius:8px;">' + data + '</pre>';
+    }
+}
+
+async function downloadFile(url, filename) {
+    window.open(url, '_blank');
+}
+
+function getValueByPath(obj, path) {
+    if (!path || !obj) return null;
+    const parts = path.split(/\.|\[|\]/).filter(function(p) { return p !== ''; });
+    let cur = obj;
+    for (let i = 0; i < parts.length; i++) {
+        if (cur === undefined || cur === null) return null;
+        cur = cur[/^\d+$/.test(parts[i]) ? parseInt(parts[i]) : parts[i]];
+    }
+    return cur;
+}
+
+function saveModelApiConfig(modelId) {
+    const model = models.find(function(m) { return m.id === modelId; });
+    if (model) {
+        model.apiKey = document.getElementById('workspaceApiKey')?.value || '';
+        model.baseUrl = document.getElementById('workspaceBaseUrl')?.value || '';
+        saveModels();
+        alert('模型API配置已保存');
+    }
+}
+
+function exportModels() {
+    const dataStr = JSON.stringify(models, null, 2);
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'models_backup_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+}
+function importModels(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            if (Array.isArray(imported)) {
+                models = models.concat(imported);
+                saveModels();
+                renderModelList();
+                alert('成功导入 ' + imported.length + ' 个模型');
+            } else alert('文件格式错误');
+        } catch(err) { alert('解析失败'); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+function openModelModal() {
+    document.getElementById('modalTitle').innerText = '添加模型';
+    document.getElementById('editModelId').value = '';
+    ['modelName','modelApiKey','modelBaseUrl','modelPath','modelId','modelBodyTemplate','modelResultPath','modelDesc'].forEach(function(id) { document.getElementById(id).value = ''; });
+    document.getElementById('modelMethod').value = 'POST';
+    document.getElementById('modelType').value = 'video';
+    document.getElementById('modelPollPath').value = '';
+    document.getElementById('modelTaskIdPath').value = '';
+    document.getElementById('pollConfig').style.display = 'block';
+    document.getElementById('modelModal').style.display = 'flex';
+}
+function closeModelModal() { document.getElementById('modelModal').style.display = 'none'; }
+function editModel(id) {
+    const m = models.find(function(m) { return m.id === id; });
+    if (!m) return;
+    document.getElementById('modalTitle').innerText = '编辑模型';
+    document.getElementById('editModelId').value = m.id;
+    document.getElementById('modelName').value = m.name;
+    document.getElementById('modelApiKey').value = m.apiKey || '';
+    document.getElementById('modelBaseUrl').value = m.baseUrl || '';
+    document.getElementById('modelPath').value = m.path;
+    document.getElementById('modelMethod').value = m.method || 'POST';
+    document.getElementById('modelId').value = m.modelId;
+    document.getElementById('modelBodyTemplate').value = m.bodyTemplate;
+    document.getElementById('modelResultPath').value = m.resultPath || '';
+    document.getElementById('modelType').value = m.type;
+    document.getElementById('modelPollPath').value = m.pollPath || '';
+    document.getElementById('modelTaskIdPath').value = m.taskIdPath || '';
+    document.getElementById('modelDesc').value = m.desc || '';
+    document.getElementById('pollConfig').style.display = m.type === 'video' ? 'block' : 'none';
+    document.getElementById('modelModal').style.display = 'flex';
+}
+function saveModel() {
+    const id = document.getElementById('editModelId').value || Date.now().toString();
+    const name = document.getElementById('modelName').value;
+    if (!name) { alert('请输入模型名称'); return; }
+    let bodyTemplate = document.getElementById('modelBodyTemplate').value;
+    try { JSON.parse(bodyTemplate); } catch(e) { alert('JSON格式错误: ' + e.message); return; }
+    const newModel = {
+        id: id, name: name,
+        apiKey: document.getElementById('modelApiKey').value,
+        baseUrl: document.getElementById('modelBaseUrl').value,
+        path: document.getElementById('modelPath').value || '/',
+        method: document.getElementById('modelMethod').value,
+        modelId: document.getElementById('modelId').value,
+        bodyTemplate: bodyTemplate,
+        resultPath: document.getElementById('modelResultPath').value,
+        type: document.getElementById('modelType').value,
+        pollPath: document.getElementById('modelPollPath').value,
+        taskIdPath: document.getElementById('modelTaskIdPath').value,
+        desc: document.getElementById('modelDesc').value
+    };
+    const idx = models.findIndex(function(m) { return m.id === id; });
+    if (idx >= 0) models[idx] = newModel;
+    else models.push(newModel);
+    saveModels();
+    renderModelList();
+    closeModelModal();
+    if (currentModelId === id) selectModel(id);
+}
+function deleteModel(id) {
+    if (confirm('确定删除？')) {
+        models = models.filter(function(m) { return m.id !== id; });
+        saveModels();
+        if (currentModelId === id) {
+            currentModelId = null;
+            document.getElementById('workspaceTitle').innerHTML = '⚡ 选择左侧模型开始使用';
+            document.getElementById('workspaceContent').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#aaa;">👈 添加模型</div>';
+        }
+        renderModelList();
+    }
+}
+function addTemplate(template) {
+    if (template === 'sora2-video') {
+        models.push({ id: Date.now().toString(), name: 'Sora2 视频生成', path: '/v1/videos', method: 'POST', modelId: 'sora-2-reverse', bodyTemplate: '{"model":"{model}","prompt":"{prompt}","aspect_ratio":"{aspect_ratio}","seconds":"{duration}","input_reference":"{images}","quality":"high"}', resultPath: 'task_id', type: 'video', pollPath: '/v1/videos/{task_id}', taskIdPath: 'task_id', desc: '高清+参考图', apiKey: '', baseUrl: '' });
+    } else if (template === 'gpt-image-2') {
+        models.push({ id: Date.now().toString(), name: '图片生成', path: '/v1/chat/completions', method: 'POST', modelId: 'gpt-image-2-reverse', bodyTemplate: '{"model":"{model}","messages":[{"role":"user","content":"{prompt}"}],"n":1}', resultPath: 'choices[0].message.content', type: 'image', pollPath: '', taskIdPath: '', desc: '图生图', apiKey: '', baseUrl: '' });
+    } else if (template === 'chat') {
+        models.push({ id: Date.now().toString(), name: '通用对话(视觉)', path: '/v1/chat/completions', method: 'POST', modelId: 'gpt-4o-mini', bodyTemplate: '{"model":"{model}","messages":{messages},"stream":false}', resultPath: 'choices[0].message.content', type: 'chat', pollPath: '', taskIdPath: '', desc: '支持多图', apiKey: '', baseUrl: '' });
+    } else { openModelModal(); return; }
+saveModels();
+    renderModelList();
+    alert('模板已添加');
+}
+
+async function uploadBase64ToImageHost(base64) {
+    const rawBase64 = base64.split(',')[1];
+    const formData = new FormData();
+    formData.append('source', rawBase64);
+    formData.append('action', 'upload');
+    formData.append('type', 'file');
+    try {
+        const res = await fetch('https://freeimage.host/api/1/upload', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: formData
+        });
+        const data = await res.json();
+        if (data.status_code === 200 && data.image && data.image.url) {
+            return data.image.url;
+        }
+} catch(e) { console.error('图床1失败', e); }
+    return null;
+}
+// 智能下载或打开
+function downloadOrOpen(taskId) {
+    const task = tasks.find(t => t.id == taskId);
+    if (!task || !task.resultUrl) return;
+    window.open(task.resultUrl, '_blank');
+}
+
+function copyPromptSafe(taskId) {
+    try { copyPrompt(taskId); } catch(e) { alert('复制失败：' + e.message); }
+}
+
+function editTaskSafe(taskId) {
+    try { editTask(taskId); } catch(e) { alert('编辑失败：' + e.message); }
+}
+
+function deleteTaskSafe(taskId) {
+    try { deleteTask(taskId); } catch(e) { alert('删除失败：' + e.message); }
+}
+async function autoSaveTaskLog(task) {
+    try {
+        let allLogs = [];
+        const saved = localStorage.getItem('task_logs');
+        if (saved) allLogs = JSON.parse(saved);
+        
+        allLogs.push({
+            时间: new Date().toLocaleString(),
+            模型: task.modelName,
+            类型: task.type,
+            提示词: task.prompt,
+            时长: task.duration + 's',
+            比例: task.aspectRatio,
+            结果链接: task.resultUrl
+        });
+        
+        localStorage.setItem('task_logs', JSON.stringify(allLogs));
+        
+        const blob = new Blob([JSON.stringify(allLogs, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '任务日志汇总.json';
+        a.click();
+        setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+    } catch(e) {}
+}
+
+window.addEventListener('beforeunload', function() { if (pollingTimer) clearInterval(pollingTimer); });
+window.onclick = function(e) { if (e.target === document.getElementById('modelModal')) closeModelModal(); };
+loadData();
+</script>
+</body>
+</html>

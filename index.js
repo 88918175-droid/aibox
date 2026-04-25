@@ -1,52 +1,43 @@
-// 一个简单的边缘函数示例
-export default async function handleRequest(request, context) {
-  const url = new URL(request.url);
-  const path = url.pathname;
+// 处理 GET 请求（读取数据）
+export function onRequestGet(context) {
+  return handleRequest(context, 'GET');
+}
 
-  // 路由处理
-  if (path === '/' || path === '/index.html') {
-    return serveHTML(indexHtml);
-  }
-  
-  if (path === '/admin.html') {
-    return serveHTML(adminHtml);
-  }
-  
-  if (path === '/Albox.html') {
-    return serveHTML(alboxHtml);
-  }
+// 处理 POST 请求（写入数据）
+export function onRequestPost(context) {
+  return handleRequest(context, 'POST');
+}
 
-  // API 示例
-  if (path === '/api/hello') {
-    return new Response(JSON.stringify({ message: 'Hello from EdgeOne!' }), {
+async function handleRequest(context, method) {
+  // 启用 KV 存储，请确保已在项目中绑定命名空间名为 KV_DATA
+  const KV = context.env.KV_DATA;
+  const request = context.request;
+
+  if (method === 'GET') {
+    const data = await KV.get('users');
+    return new Response(data || '{}', {
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  return new Response('Not Found', { status: 404 });
+  if (method === 'POST') {
+    try {
+      const body = await request.json();
+      const old = JSON.parse(await KV.get('users') || '{}');
+      Object.keys(body).forEach(key => {
+        old[key] = body[key];
+      });
+      await KV.put('users', JSON.stringify(old));
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch(e) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  return new Response('Method not allowed', { status: 405 });
 }
-
-function serveHTML(html) {
-  return new Response(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' }
-  });
-}
-
-// 这里你需要把你的 HTML 内容放进来
-const indexHtml = `<!DOCTYPE html>
-<html>
-<head><title>主页</title></head>
-<body><h1>欢迎</h1></body>
-</html>`;
-
-const adminHtml = `<!DOCTYPE html>
-<html>
-<head><title>管理后台</title></head>
-<body><h1>管理后台</h1></body>
-</html>`;
-
-const alboxHtml = `<!DOCTYPE html>
-<html>
-<head><title>Albox</title></head>
-<body><h1>Albox 功能页</h1></body>
-</html>`;
